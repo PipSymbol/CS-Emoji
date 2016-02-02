@@ -999,3 +999,156 @@ var emoji = [
     //"v"
 ];
 
+/**
+*gets a pseudo-random number using a string as a seed
+*
+*@param str String to be used for seed
+*@param max Max value returned is 1-max
+*@returns {number}
+*/
+function getsPseudoRandom(str, max) {
+   var sum = 0;
+   for (var i = 0; i < str.length; i++)
+      sum += str.CharCodeAt(i);
+   return math.pow(sum, 2) % max;
+}
+function recurseTranslate(str, type) {
+    for (var j = 0; j < emoji.length; j++) {
+        var place = str.indexOf(emoji[j]);
+        if (place > -1) {
+            if (isOperator(j))
+            {
+                return recurseTranslate(str.substring(0, place), type)
+                    + createFormattedEmoji(j, type)
+                    + recurseTranslate(str.substring(findNextSpace(str, place + emoji[j].length)), type);
+            }
+            return recurseTranslate(str.substring(0, findLastSpace(str, place)), type)
+                + createFormattedEmoji(j, type)
+                + recurseTranslate(str.substring(findNextSpace(str, place + emoji[j].length)), type);
+        }
+    }
+
+    str = removeStopwords(str);
+    if (str.length > 0) {
+        var words = str.split(' ');
+        str = '';
+        for (var i = 0; i < words.length; i++) {
+            str += getRandomEmoji(words[i], type);
+        }
+    }
+    return str;
+}
+
+
+function isOperator(emojiNum)
+{
+    return emojiNum < 4;
+}
+
+function createFormattedEmoji(emojiNum, type) {
+    if (type == 0 || type == null) {
+        emojiNum = formatForOutputRules(emojiNum);
+        return emoji[emojiNum].replace(/ /g, '_') + ',';
+    }
+    else {
+        emojiNum = formatForDisplayRules(emojiNum);
+        return ':' + emoji[emojiNum].replace(/ /g, '_') + ':';
+    }
+}
+
+function formatForDisplayRules(emojiNum) {
+    if (emoji[emojiNum] == '+1')
+        emojiNum++;
+    else if (emoji[emojiNum] == '!')
+        emojiNum = emoji.indexOf('exclamation');
+    else if (emoji[emojiNum] == '!?' || emoji[emojiNum] == '?!')
+        emojiNum = emoji.indexOf('interrobang');
+    else if (emoji[emojiNum] == "?")
+        emojiNum = emoji.indexOf('question');
+
+    return emojiNum;
+}
+
+function formatForOutputRules(emojiNum) {
+    if (emoji[emojiNum] == '!')
+        emojiNum = emoji.indexOf('exclamation');
+    else if (emoji[emojiNum] == '!?' || emoji[emojiNum] == '?!')
+        emojiNum = emoji.indexOf('interrobang');
+    else if (emoji[emojiNum] == '?')
+        emojiNum = emoji.indexOf('question');
+
+    return emojiNum;
+}
+
+function preprocessTranslateStr(str) {
+    return str.toLowerCase().replace(new RegExp("\n", "g"), " ");
+}
+
+function translate(str, type) {
+    var result = recurseTranslate(preprocessTranslateStr(str), type);
+    if (result.length == 0)
+        result = getRandomEmoji(str, type);
+    if (str.length == 0)
+        result = "";
+
+    return result;
+}
+
+function removeStopwords(str) {
+    for (var i = 0; i < stopWords.length; i++) {
+        str = str.replace(new RegExp("\\b" + stopWords[i] + "\\b", "g"), ' ');
+    }
+    return str.trim();
+}
+
+function findNextSpace(str, place) {
+    if (place >= str.length - 1 || str.charAt(place) == ' ' || str.charAt(place) == '.')
+        return place + 1;
+    else
+        return findNextSpace(str, place + 1);
+}
+
+function getRandomEmoji(word, type) {
+    if (word == '')
+        return '';
+    return createFormattedEmoji(getPseudoRandom(word, emoji.length), type);
+}
+
+function getClipboardStr(str) {
+    return translate(str, 1)
+}
+
+function removeSpaces() {
+
+
+    var darr = translate(document.getElementById('comment').value, 0);
+
+
+    var listOfThangs = darr.split(",", darr.length - 1);
+
+    var src = document.getElementById("wow");
+    src.innerHTML = '';
+
+    for (var x = 0; x < listOfThangs.length - 1; x++) {
+        var wee = "http://www.emoji-cheat-sheet.com/graphics/emojis/" + listOfThangs[x] + ".png";
+        var img = document.createElement("img");
+        img.src = wee;
+        img.height = "25";
+        img.width = "25";
+
+
+        src.appendChild(img);
+
+    }
+
+    setTimeout(removeSpaces, 500);
+
+}
+
+function copyStuff() {
+    new Clipboard('.btn', {
+        text: function() {
+            return getClipboardStr(document.getElementById('comment').value)
+        }
+    });
+}
